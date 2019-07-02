@@ -1,0 +1,362 @@
+---
+title: "Untitled"
+author: "Elie"
+date: "20 février 2018"
+output: 
+   html_document:
+    toc: yes
+    toc_float: yes
+---
+
+```{r sources, include=TRUE, echo=FALSE, cache=FALSE}
+
+source(file="C:/Users/Flora2/Desktop/sourcing_functions.R")
+
+read.csv(file="N:/Documents de Elie/FNDSA/FNDSA_enquete1.csv", header=TRUE, fileEncoding = "UTF-8", colClasses = "factor", na.strings = c(" ","", "#N/D" ))->database
+source(file='N:/Documents de Elie/FNDSA/MCA2.R', encoding = 'UTF-8', echo=FALSE)
+````
+
+
+
+# Lecture des tableaux
+
+J'ai réalisé deux séries de classifications: une clasification sur l'ensemble des enquêtés, puis une classification opérée sur chaque groupe ainsi obtenu (3 groupes), permettant de constituer des sous-groupes:
+
+```{r treemap, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+library(treemap)
+aggregate(treedata.map$count, by=list(treedata.map$glob.clust), FUN=sum)->effG
+aggregate(treedata.map$count, by=list(treedata.map$glob.clust, treedata.map$subgroup), FUN=sum)->effSG
+treedata.map$labsG<-with(treedata.map,
+      sapply(1:nrow(treedata.map), function(i)
+          paste("Groupe ", treedata.map$glob.clust[i], " (n:", effG[effG$Group.1==treedata.map$glob.clust[i] , "x" ], ")", sep="")
+      )
+)
+treedata.map$labsSG<-with(treedata.map,
+      sapply(1:nrow(treedata.map), function(i)
+        paste("sous-groupe ", treedata.map$subgroup[i], " (n:", effSG[effSG$Group.1==treedata.map$glob.clust[i]&effSG$Group.2==treedata.map$subgroup[i] , "x" ], ")", sep="")
+      )
+)
+
+
+treemap(treedata.map, index = c("labsG", "labsSG"), vSize = "count", type = "index", palette = "Set1", 
+        title="Répartition des individus par groupe", fontsize.labels=c(15, 10), fontface.labels=c(2, 3), ymod.labels=c(0.37, 0), xmod.labels=c(-0.45, 0))
+
+
+  #descvar0
+#descvar1
+#descvar2
+#descvar3
+#for(i in 1:length(descvar0)){
+#  kable(descvar0, "html") %>%
+#  kable_styling(bootstrap_options = "striped", font_size = 7)
+#}
+````
+
+**Attention**: premier dégrossissement des données, travail en cours. Pas de résultats définitifs, mais des premières pistes.    
+D'autant plus que le jeu de données est de petite taille: l'analyse des sous-groupes est vraiment sujette à caution, de votre part et de la part du FNDSA. 
+Pour l'instant je me suis contenté de laisser l'algorithme choisir le nombre de groupes, mais cela peut être modifié à l'envie. 
+
+**Statistiques d'intérêt**:        
+- *Cla.Mod*	: part des individus concernés par la modalité se retrouvant dans cette classe.      
+- *Mod.Cla* : part des individus de la classe concernés par la modalités.        
+- *Global*: part des tous les individus (de toutes les classes)	concernés par la modalité.   
+**Test de Fischer**:         
+- *p.value*: le test est-il ou non significatif?      
+- *odd.ratio*: un odd.ratio de 4.48 signifie que les membres du groupe ont 4.48 fois plus de chances d'avoir la modalité étudiée, en comparant avec toutes les personnes non-membres du groupe.        
+Un odd.ratio < 1 signifie que la probabilité d'avoir la modalité est plus faible pour les membres du groupe (un odd.ration de 0.5 => 2 fois moins de chance d'avoir la modalité pour les membres du groupe)
+
+#Groupe 1
+Dans le Groupe 1 nous avons des personnes de nationalité française,  retraités et souvent âgés, plus souvent célibataires, vivant anciennement dans leur propre logement. Ils ont plus souvent un accompagnement pour accompagnement social ou pour des problèmes de ressources. Ils sont particulièrement souvent en demande d'un logement depuis plus de 10 ans.      
+Il faut noter également que dans le groupe 1 les personnes qui ont fait passer le questionnaire ont significativement plus souvent noté qu'elles doutaient de la véracité des réponses de la personne interrogées. 
+Dans ce groupe, les personnes ayant des enfants à charge sont plus souvent sans liens avec eux et ils expriment moins souvent le désir de les recevoir au centre d'hébergement.
+
+**Statistiques d'intérêt pour les modalités davantage présentes dans le groupe 1:**
+```{r g1stat, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE, eval=TRUE}
+library(knitr)
+library(kableExtra)
+statplus= "#D8F781"
+statmoins= "#F7BE81"
+signplus="#81F781"
+signmoins="#F78181"
+data.frame(descvar0$"1")->a
+kable(a[a$v.test>0, c(1, 2, 3)], "html", caption="Statistiques G1 - modalités davantage présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test>0 ,]), bold = T, color = "white", background = statplus)
+````
+
+```{r g1moins, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE, eval=TRUE}
+kable(a[a$v.test<0 , c(1, 2, 3)], "html", caption="Statistiques G1 - modalités moins présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test<0 ,]), bold = T, color = "white", background = statmoins)
+````
+
+**Résultats significatifs des test de Fischer (groupe 1):**
+```{r g1plus.fish, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+create.bool.df(dataframe = dataclust)->databool.N1
+app.test(dataframe=databool.N1, var.base="glob.clust.1", 
+                   var.test=NULL, var.exclude=NULL, 
+                   test.t="fisher", seuil.pval)->g1.fish
+g1.fish$res.df[g1.fish$res.df$p.value<0.1 , ]->g1.fish.sign
+g1.fish.sign<-g1.fish.sign[order(g1.fish.sign$odd.ratio, decreasing = TRUE) ,]
+g1.fish.sign$p.value<-round(as.numeric(g1.fish.sign$p.value), 4)
+g1.fish.sign$odd.ratio<-round(as.numeric(g1.fish.sign$odd.ratio), 2)
+library(gtools)
+g1.fish.sign$"sign."<-stars.pval(p.value = as.numeric(g1.fish.sign$p.value))
+g1.fish.sign$"sign."<-gsub(pattern="\\*", replacement = "'", x = g1.fish.sign$"sign." )
+kable(g1.fish.sign, "html", caption="Tests de fisher (significativité) :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(which(g1.fish.sign$odd.ratio<1), bold = T, color = "white", background = signmoins) %>%
+  row_spec(which(g1.fish.sign$odd.ratio>1), bold = T, color = "white", background = signplus)
+
+````
+
+## Sous-groupe 1.1
+Les 9 personnes du sous-groupe 1, elles aussi de nationalité française, se distinguent des autres personnes du groupe 1 en ce qu'elles sont en emploi, sont en couple et ont des enfants en charge avec qui elles sont en lien, même si elles ne veulent pas les recevoir dans le centre.     
+Elles ont plus souvent un accompagnement lié à leurs soins ou à leurs droits, et ont une demande de logement relativement ancienne (entre 6 et 10 ans).       
+Avant le centre d'hébergement elles dormaient plus souvent dans des espaces non référencés dans l'enquête ("Autre": à voir)
+
+Variables et modalités sur-représentées dans le sous-groupe 1:
+```{r sg11plus, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+data.frame(descvar1$"1")->a
+kable(a[a$v.test>0 , c(1, 2, 3)], "html", caption="Statistiques s-g 1.1 - modalités davantage présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test>0 ,]), bold = T, color = "white", background = statplus)
+````
+Variables et modalités sous-représentées dans le groupe 1:
+```{r sg11moins, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+kable(a[a$v.test<0 , c(1, 2, 3)], "html", , caption="Statistiques s-g 1.1 - modalités moins présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test<0 ,]), bold = T, color = "white", background = statmoins)
+````
+
+```{r sg11.fish.sign, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+library(gtools)
+create.bool.df(dataframe = dataclust.c1)->databool.N1
+app.test(dataframe=databool.N1[, names(databool.N1)%w/o%paste("clust.c1.", 2:5, sep="")], var.base="clust.c1.1", 
+                   var.test=NULL, var.exclude=NULL, 
+                   test.t="fisher", seuil.pval)->sg11.fish
+sg11.fish$res.df[sg11.fish$res.df$p.value<0.1 , ]->sg11.fish.sign
+sg11.fish.sign<-sg11.fish.sign[order(sg11.fish.sign$odd.ratio, decreasing = TRUE) ,]
+sg11.fish.sign$p.value<-round(as.numeric(sg11.fish.sign$p.value), 4)
+sg11.fish.sign$odd.ratio<-round(as.numeric(sg11.fish.sign$odd.ratio), 2)
+sg11.fish.sign$"sign."<-stars.pval(p.value = as.numeric(sg11.fish.sign$p.value))
+sg11.fish.sign$"sign."<-gsub(pattern="\\*", replacement = "'", x = sg11.fish.sign$"sign." )
+kable(sg11.fish.sign, "html", caption="Tests de fisher (significativité) :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio<1), bold = T, color = "white", background = signmoins) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio>1), bold = T, color = "white", background = signplus)
+
+````
+
+
+## Sous-groupe 1.2
+Les 12 personnes du sous-groupe 1.2, elles aussi de nationalité française, ont, comme dans le groupe 1.1 des enfants, mais elles sont en rupture de liens avec leurs enfants (et déclarent plus souvent ne pas vouloir les recevoir au centre d'hébergement). Ces personnes sont plutôt âgées, sans emploi et bénéficiaires de minima sociaux, et bénéficient plus souvent d'un accompagnement social.       
+Elles déclarent plus souvent ne pas être en recherche de logement.       
+
+Variables et modalités sur-représentées dans le sous-groupe 1.2:
+```{r sg12plus, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+data.frame(descvar1$"2")->a
+kable(a[a$v.test>0 ,c(1, 2, 3)], "html", caption="Statistiques s-g 1.2 - modalités davantage présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test>0 ,]), bold = T, color = "white", background = statplus)
+````
+Variables et modalités sous-représentées dans le groupe 1.2:
+```{r sg12moins, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+kable(a[a$v.test<0 ,c(1, 2, 3)], "html", caption="Statistiques s-g 1.2 - modalités moins présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test<0 ,]), bold = T, color = "white", background = statmoins)
+````
+
+```{r sg12.fish.sign, include=TRUE, echo=FALSE, cache=FALSE, message=FALSE}
+# A changer
+library(gtools)
+library(kableExtra)
+library(knitr)
+app.test(dataframe=databool.N1[, names(databool.N1)%w/o%paste("clust.c1.", c(1, 3:5), sep="")], var.base="clust.c1.2", 
+                   var.test=NULL, var.exclude="id", 
+                   test.t="fisher", seuil.pval)->sg11.fish
+                   #
+sg11.fish$res.df[sg11.fish$res.df$p.value<0.1 , ]->sg11.fish.sign
+sg11.fish.sign<-sg11.fish.sign[order(sg11.fish.sign$odd.ratio, decreasing = TRUE) ,]
+sg11.fish.sign$p.value<-round(as.numeric(sg11.fish.sign$p.value), 4)
+sg11.fish.sign$odd.ratio<-round(as.numeric(sg11.fish.sign$odd.ratio), 2)
+sg11.fish.sign$"sign."<-stars.pval(p.value = as.numeric(sg11.fish.sign$p.value))
+sg11.fish.sign$"sign."<-gsub(pattern="\\*", replacement = "'", x = sg11.fish.sign$"sign." )
+kable(sg11.fish.sign, "html", caption="Tests de fisher (significativité) :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio<1), bold = T, color = "white", background = signmoins) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio>1), bold = T, color = "white", background = signplus)
+
+````
+
+## Sous-groupe 1.3
+Les 7 personnes du sous-groupe 1.3, elles aussi de nationalité française, se distinguent en ce qu'elles sont très souvent retraitées, âgées de plus de 65 ans. Toutes les personnes du groupe 1 qui déclarent chercher un logement en dehors du centre depuis plus de 10 ans se retrouvent dans ce sous-groupe, mais les enquêteurs semblent plus souvent douter de la véracité de leurs réponses. Par ailleurs les personnes qui déclarent ne pas chercher de logement sont également sur-représentées ici, ce qui complique l'analyse de ce groupe à mon avis. 
+
+```{r sg13plus, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+data.frame(descvar1$"3")->a
+kable(a[a$v.test>0 ,c(1, 2, 3)], "html", caption="Statistiques s-g 1.3 - modalités davantage présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test>0 ,]), bold = T, color = "white", background = statplus)
+````
+```{r sg13moins, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+kable(a[a$v.test<0 ,c(1, 2, 3)], "html", caption="Statistiques s-g 1.2 - modalités moins présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test<0 ,]), bold = T, color = "white", background = statmoins)
+````
+
+```{r sg13.fish.sign, include=TRUE, echo=FALSE, cache=FALSE, message=FALSE}
+library(gtools)
+library(kableExtra)
+library(knitr)
+# A changer
+app.test(dataframe=databool.N1[, names(databool.N1)%w/o%paste("clust.c1.", c(1:2, 4:5), sep="")], var.base="clust.c1.3", 
+                   var.test=NULL, var.exclude=NULL, 
+                   test.t="fisher", seuil.pval)->sg11.fish
+                   #
+sg11.fish$res.df[sg11.fish$res.df$p.value<0.1 , ]->sg11.fish.sign
+sg11.fish.sign<-sg11.fish.sign[order(sg11.fish.sign$odd.ratio, decreasing = TRUE) ,]
+sg11.fish.sign$p.value<-round(as.numeric(sg11.fish.sign$p.value), 4)
+sg11.fish.sign$odd.ratio<-round(as.numeric(sg11.fish.sign$odd.ratio), 2)
+sg11.fish.sign$"sign."<-stars.pval(p.value = as.numeric(sg11.fish.sign$p.value))
+sg11.fish.sign$"sign."<-gsub(pattern="\\*", replacement = "'", x = sg11.fish.sign$"sign." )
+kable(sg11.fish.sign, "html", caption="Tests de fisher (significativité) :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio<1), bold = T, color = "white", background = signmoins) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio>1), bold = T, color = "white", background = signplus)
+
+````
+
+
+## Sous-groupe 1.4
+Les 12 personnes du sous-groupe 1.4, se distinguent par leur âge (âges actifs sur-représentés) et par l'absence d'enfants à charge. 
+Parmi eux, aucun ne déclare ne pas chercher de logement (modalité sous-représentée).    
+Ils sont plus nombreux à avoir été en colocation. 
+
+
+```{r sg14plus, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+data.frame(descvar1$"4")->a
+kable(a[a$v.test>0 ,c(1, 2, 3)], "html", caption="Statistiques s-g 1.4 - modalités davantage présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test>0 ,]), bold = T, color = "white", background = statplus)
+````
+```{r sg14moins, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+kable(a[a$v.test<0 ,c(1, 2, 3)], "html", caption="Statistiques s-g 1.4 - modalités moins présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test<0 ,]), bold = T, color = "white", background = statmoins)
+````
+
+```{r sg14.fish.sign, include=TRUE, echo=FALSE, cache=FALSE, message=FALSE}
+library(gtools)
+library(kableExtra)
+library(knitr)
+# A changer
+app.test(dataframe=databool.N1[, names(databool.N1)%w/o%paste("clust.c1.", c(1:3, 5), sep="")], var.base="clust.c1.4", 
+                   var.test=NULL, var.exclude=NULL, 
+                   test.t="fisher", seuil.pval)->sg11.fish
+                   #
+sg11.fish$res.df[sg11.fish$res.df$p.value<0.1 , ]->sg11.fish.sign
+sg11.fish.sign<-sg11.fish.sign[order(sg11.fish.sign$odd.ratio, decreasing = TRUE) ,]
+sg11.fish.sign$p.value<-round(as.numeric(sg11.fish.sign$p.value), 4)
+sg11.fish.sign$odd.ratio<-round(as.numeric(sg11.fish.sign$odd.ratio), 2)
+sg11.fish.sign$"sign."<-stars.pval(p.value = as.numeric(sg11.fish.sign$p.value))
+sg11.fish.sign$"sign."<-gsub(pattern="\\*", replacement = "'", x = sg11.fish.sign$"sign." )
+kable(sg11.fish.sign, "html", caption="Tests de fisher (significativité) :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio<1), bold = T, color = "white", background = signmoins) %>%
+  row_spec(which(sg11.fish.sign$odd.ratio>1), bold = T, color = "white", background = signplus)
+
+````
+
+
+
+# Groupe 2
+
+Dans le Groupe 2 nous avons des personnes étrangères, plus souvent originaires du Maghreb, jeunes voire très jeunes, célibataires et sans enfants. S'ils ne sont pas particulièrement en situation irrégulière, ils sont très souvent sans autorisation de travail et arrivés depuis peu en France. Ils ne bénéficient pas pour autant de minima sociaux (du fait de leur situation administrative), et sont plus souvent sans ressources. 
+Ils sont plus souvent hébergés à la nuitée.                 
+
+**Statistiques d'intérêt pour les modalités davantage présentes dans le groupe 2:**
+
+```{r g2plus, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+library(knitr)
+library(kableExtra)
+data.frame(descvar0$"2")->a
+kable(a[a$v.test>0, c(1, 2, 3)], "html", caption="Statistiques G2 - modalités davantage présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test>0 ,]), bold = T, color = "white", background = statplus)
+````
+```{r g2moins, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+kable(a[a$v.test<0 , c(1, 2, 3)], "html", caption="Statistiques G2 - modalités moins présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test<0 ,]), bold = T, color = "white", background = statmoins)
+````
+
+**Résultats significatifs des test de Fischer (groupe 2):**
+
+```{r g2plus.fish, include=TRUE, echo=FALSE, cache=FALSE, message=FALSE}
+
+create.bool.df(dataframe = dataclust)->databool.N2
+print("test")
+app.test(dataframe=databool.N2, var.base="glob.clust.2", 
+                   var.test=NULL, var.exclude="id", 
+                   test.t="fisher")->g1.fish
+g1.fish$res.df[g1.fish$res.df$p.value<0.1 , ]->g1.fish.sign
+g1.fish.sign<-g1.fish.sign[order(g1.fish.sign$odd.ratio, decreasing = TRUE) ,]
+g1.fish.sign$p.value<-round(as.numeric(g1.fish.sign$p.value), 4)
+g1.fish.sign$odd.ratio<-round(as.numeric(g1.fish.sign$odd.ratio), 2)
+library(gtools)
+library(kableExtra)
+library(knitr)
+g1.fish.sign$"sign."<-stars.pval(p.value = as.numeric(g1.fish.sign$p.value))
+g1.fish.sign$"sign."<-gsub(pattern="\\*", replacement = "'", x = g1.fish.sign$"sign." )
+kable(g1.fish.sign, "html", caption="Tests de fisher (significativité) :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(which(g1.fish.sign$odd.ratio<1), bold = T, color = "white", background = signmoins) %>%
+  row_spec(which(g1.fish.sign$odd.ratio>1), bold = T, color = "white", background = signplus)
+
+````
+
+
+# Groupe 3
+
+Dans le Groupe 3 nous avons des personnes plus souvent étrangères, avec deux origines géographiques sur-représentées: les pays d’Afrique subsaharienne et les pays d'Europe.                     
+Les personnes sont plus souvent en couple, ont plus souvent des enfants à charge (tous les membres du groupe déclarent au moins un enfant à charge). Ils sont plus nombreux à être en lien avec leurs enfants, mais également plus nombreux (quoique de manière moins marquée) à ne pas avoir de liens avec leurs enfants: c'est bien le fait d'avoir des enfants qui est ici particulièrement marqué.                   
+
+Ces personnes sont plus souvent hébergées sur une place stabilisée et l'instructeur du questionnaire apporte plus souvent du crédit à leurs réponses. S'ils ont souvent un titre de séjour, beaucoup sont également en situation irrégulière, et leur point commun et de ne pas travailler, notamment parce qu'ils n'ont pas l'autorisation pour le faire. Malgré cela ils ne bénéficient pas des minima sociaux et déclarent souvent n'avoir aucune ressource, même s'ils sont nombreux également à bénéficier des ressources afférentes au statut de demandeur d'asile.                          
+
+Ils sont plus souvent âgés entre 55 et 64 ans et moins souvent âgés entre 25 et 34 ans. Ils expriment souvent un besoin de santé et bénéficient souvent d'un accompagnement "autre" (à voir dans le détail le sprécisions éventuelles).               
+
+#### **Statistiques d'intérêt pour les modalités davantage présentes dans le groupe 3:**
+
+```{r g3plus, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+data.frame(descvar0$"3")->a
+kable(a[a$v.test>0, c(1, 2, 3)], "html", caption="Statistiques G3 - modalités davantage présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test>0 ,]), bold = T, color = "white", background = statplus)
+````
+```{r g3moins, include=TRUE, echo=FALSE, cache=TRUE, message=FALSE}
+kable(a[a$v.test<0 , c(1, 2, 3)], "html", caption="Statistiques G3 - modalités moins présentes :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(1:nrow(a[a$v.test<0 ,]), bold = T, color = "white", background = statmoins)
+````
+
+#### **Résultats significatifs des test de Fischer (groupe 3):**
+
+```{r g3plus.fish, include=TRUE, echo=FALSE, cache=FALSE, message=FALSE}
+create.bool.df(dataframe = dataclust)->databool.N3
+app.test(dataframe=databool.N3, var.base="glob.clust.3", 
+                   var.test=NULL, var.exclude=NULL, 
+                   test.t="fisher", seuil.pval)->g1.fish
+g1.fish$res.df[g1.fish$res.df$p.value<0.1 , ]->g1.fish.sign
+g1.fish.sign<-g1.fish.sign[order(g1.fish.sign$odd.ratio, decreasing = TRUE) ,]
+g1.fish.sign$p.value<-round(as.numeric(g1.fish.sign$p.value), 4)
+g1.fish.sign$odd.ratio<-round(as.numeric(g1.fish.sign$odd.ratio), 2)
+library(gtools)
+g1.fish.sign$"sign."<-stars.pval(p.value = as.numeric(g1.fish.sign$p.value))
+g1.fish.sign$"sign."<-gsub(pattern="\\*", replacement = "'", x = g1.fish.sign$"sign." )
+kable(g1.fish.sign, "html", caption="Tests de fisher (significativité) :") %>%
+  kable_styling("striped", full_width = F) %>%
+  row_spec(which(g1.fish.sign$odd.ratio<1), bold = T, color = "white", background = signmoins) %>%
+  row_spec(which(g1.fish.sign$odd.ratio>1), bold = T, color = "white", background = signplus)
+
+````
+
