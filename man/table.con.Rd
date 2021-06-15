@@ -4,7 +4,14 @@
 \alias{table.con}
 \title{table.con retourne des tables de contingences pour deux variables d'un même data.frame. Effectifs, fréquence totale, en ligne et en colonne}
 \usage{
-table.con(data = df, var = c(), decim = 0)
+table.con(
+  data = df,
+  var = c(),
+  decim = 0,
+  na.pattern = c("", " ", NA),
+  na.recode = "non-réponse",
+  ...
+)
 }
 \arguments{
 \item{data}{le data.frame}

@@ -4,9 +4,14 @@
 \alias{app.test}
 \title{La fonction "app.test"}
 \usage{
-app.test(dataframe = databool.N1[, names(databool.N1) \%w/o\%
-  paste("clust.c1.", 2:5, sep = "")], var.base = "clust.c1.1",
-  var.test = NULL, var.exclude = NULL, test.t = "fisher")
+app.test(
+  dataframe = databool.N1[, names(databool.N1) \%w/o\% paste("clust.c1.", 2:5, sep =
+    "")],
+  var.base = "clust.c1.1",
+  var.test = NULL,
+  var.exclude = NULL,
+  test.t = "fisher"
+)
 }
 \arguments{
 \item{dataframe}{le data.frame}

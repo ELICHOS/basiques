@@ -4,8 +4,12 @@
 \alias{asindice}
 \title{asindice crée un indice à paretir d'une variable numérique. Précise la base par le numéro de ligne et indice à choisir (100, 1000...)}
 \usage{
-asindice(type = "VALEUR", timeserie = emploiEQTP$TOTAL, rowbase = 1,
-  indice = 100)
+asindice(
+  type = "VALEUR",
+  timeserie = emploiEQTP$TOTAL,
+  rowbase = 1,
+  indice = 100
+)
 }
 \arguments{
 \item{type}{'VALEUR' ou 'TAUX': renseigne le type de variable entrante}

@@ -4,8 +4,13 @@
 \alias{multsheet}
 \title{multsheet permet de lire plusieurs feuille d'une meme table xls avec la fonction read_xls}
 \usage{
-multsheet(tablepath = "secteur_dep.xls", sheet.vec = 1:20,
-  sheet.name = NULL, SKIP = 4, aslist = 1)
+multsheet(
+  tablepath = "secteur_dep.xls",
+  sheet.vec = 1:20,
+  sheet.name = NULL,
+  SKIP = 4,
+  aslist = 1
+)
 }
 \arguments{
 \item{tablepath}{"chemin/du/fichiers.xls"}

@@ -1,7 +1,11 @@
 #' @export tabacp
-tabacp<-function(model=catdes.global){
+tabacp<-function(model=catdes.global, origin.data=data, origin.var){
   library(tidyverse)
+  names(model$category)[names(model$category)==""]<-"empty"
+  if(!is.null(model$quanti)){
+  names(model$quanti)[names(model$quanti)==""]<-"empty"
   names(model$quanti)->grups
+  }
   names(model$category)->grups.quali
   model$quanti.var -> quantivars
   qualivars<-unique(
@@ -57,32 +61,49 @@ tabacp<-function(model=catdes.global){
   names(df)<-grups.quali
   row.names(df)<-qualivars
   #
-  df2<-sapply(X = 1:ncol(df), FUN = function(j){
+  df2<-lapply(X = 1:ncol(df), FUN = function(j){
     model$category[[names(df)[j]]]->dfj
     #return(dfj)
-    sapply(X = 1:nrow(df), FUN = function(i){
+    lapply(X = 1:nrow(df), FUN = function(i){
       row.names(df)[i]->vari
       #print(vari)
       dfj[row.names(dfj)==vari, "v.test"]->vtest.ij
       if(length(vtest.ij)==0){vtest.ij<-NA}
       dfj[row.names(dfj)==vari, "p.value"]->pvalue.ij
       if(length(pvalue.ij)==0){pvalue.ij<-NA}
+      dfj[row.names(dfj)==vari, "Mod/Cla"]->mc.test.ij
+      if(length(mc.test.ij)==0){mc.test.ij<-NA;mc.test.ij.nb<-NA} else {
+        if(!is.null(model$call$row.w)){
+        if(length(model$call$row.w)==nrow(origin.data)){
+          library(questionr)
+          temptab<-questionr::wtd.table(x = origin.data[ , origin.var], 
+                               weights = model$call$row.w)
+        }
+        } else {
+          temptab<- table(origin.data[ , origin.var])
+        }
+        temptab[names(df)[j]]*(mc.test.ij/100)->mc.test.ij.nb
+      }
       #print(vtest.ij==0)
       #print(vtest.ij)
       #if(pvalue.ij<0.1&pvalue.ij>0.05){}
       #df[i , j]<-vtest.ij
-      vtest.ij
+      c("vtest.ij"=vtest.ij, "mc.test.ij"=mc.test.ij, "mc.test.ij.nb"=mc.test.ij.nb)->res
+      return(res)
     }
-    )
+    )->reslap
+    data.frame(do.call("rbind", reslap), stringsAsFactors = FALSE)->resldf
+    resldf$CLASS<-names(df)[j]
+    resldf$VARIABLE<-row.names(df)
+    names(resldf)<-c("vtest.ij", "mc.test.ij", "mc.test.ij.nb", "CLASS", "VARIABLE")
+    return(resldf)
   }
   )
-  #
-  data.frame(df2)->df2
   names(df2)<-names(df)
-  row.names(df2)<-row.names(df)
+  do.call("rbind", df2)->df2
   ####
-  df2$VARIABLE<-row.names(df2)
-  df2<-df2 %>% gather(-VARIABLE, key = CLASS, value = VALUE)
+  names(df2)[names(df2)==""]<-"vide"
+  #df2<-df2 %>% gather(-VARIABLE, key = CLASS, value = VALUE)
   df.quali<-df2
   } else {df.quali<-NULL}
 

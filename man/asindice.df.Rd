@@ -4,9 +4,16 @@
 \alias{asindice.df}
 \title{asindice.df applique asindice sur une data.frame ou une matrice}
 \usage{
-asindice.df(DF = NAF17ens, Margin = 2, type = "VALEUR",
-  rowbase = 1, indice = 100, alter.rownames = NULL,
-  alter.colnames = NULL, change.nom = NULL)
+asindice.df(
+  DF = NAF17ens,
+  Margin = 2,
+  type = "VALEUR",
+  rowbase = 1,
+  indice = 100,
+  alter.rownames = NULL,
+  alter.colnames = NULL,
+  change.nom = NULL
+)
 }
 \arguments{
 \item{DF}{une data.frame ou matrice}

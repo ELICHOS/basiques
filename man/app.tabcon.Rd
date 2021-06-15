@@ -4,9 +4,13 @@
 \alias{app.tabcon}
 \title{La fonction "app.tabcon"}
 \usage{
-app.tabcon(dataframe = databool.N1[, names(databool.N1) \%w/o\%
-  paste("clust.c1.", 2:5, sep = "")], var.base = "clust.c1.1",
-  var.exclude = NULL, decim = 1)
+app.tabcon(
+  dataframe = databool.N1[, names(databool.N1) \%w/o\% paste("clust.c1.", 2:5, sep =
+    "")],
+  var.base = "clust.c1.1",
+  var.exclude = NULL,
+  decim = 1
+)
 }
 \arguments{
 \item{dataframe}{le data.frame}
