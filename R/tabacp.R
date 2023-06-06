@@ -1,5 +1,8 @@
 #' @export tabacp
 tabacp<-function(model=catdes.global, origin.data=data, origin.var){
+  store.na<-names(origin.data)
+  origin.data<-as.data.frame(origin.data)
+  names(origin.data)<-store.na
   library(tidyverse)
   names(model$category)[names(model$category)==""]<-"empty"
   if(!is.null(model$quanti)){
@@ -41,18 +44,26 @@ tabacp<-function(model=catdes.global, origin.data=data, origin.var){
   }
   )
   data.frame(df2)->df2
+  
 
   if(nrow(quantivars)==1&FALSE%in%unique(dim(df2)==dim(df))){
     names(df2)<-row.names(df)
     row.names(df2)<-names(df)
+    df2<-t(df2)%>%data.frame(check.names = FALSE)
+  
   } else {
   names(df2)<-names(df)
   row.names(df2)<-row.names(df)
   }
+  
   ####
   df2$VARIABLE<-row.names(df2)
+  print(df2)
   df2<-df2 %>% gather(-VARIABLE, key = CLASS, value = VALUE)
+  print(df2)
   df.quanti<-df2
+  df.quanti<-df.quanti%>%#rename("VARIABLE"="CLASS",  "CLASS"="VARIABLE","vtest.ij"="VALUE")%>%
+    mutate(TYPE="quanti")
   } else { df.quanti<-NULL }
 
   #### QUALI ####
@@ -105,6 +116,7 @@ tabacp<-function(model=catdes.global, origin.data=data, origin.var){
   names(df2)[names(df2)==""]<-"vide"
   #df2<-df2 %>% gather(-VARIABLE, key = CLASS, value = VALUE)
   df.quali<-df2
+  df.quali<-df.quali%>%mutate(TYPE="quali")
   } else {df.quali<-NULL}
 
   #### RES ####
